@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/events")
+@RequestMapping(path="/api/events",
+                produces="application/json")
 @RequiredArgsConstructor
 public class EventController {
     private final EventRepository eventRepository;
