@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/events")
+@RequestMapping(path="/api/events", produces="application/json")
 @RequiredArgsConstructor
 public class EventController {
     private final EventRepository eventRepository;
@@ -16,6 +16,12 @@ public class EventController {
     @GetMapping
     public List<Event> getAll() {
         return eventRepository.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public Event getById(@PathVariable Long id) {
+        return eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
     }
 
     @PostMapping

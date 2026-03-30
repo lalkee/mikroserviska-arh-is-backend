@@ -18,8 +18,25 @@ public class SpeakerController {
         return speakerRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public Speaker getById(@PathVariable Long id) {
+        return speakerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Speaker not found"));
+    }
+
     @PostMapping
     public Speaker create(@RequestBody Speaker speaker) {
         return speakerRepository.save(speaker);
+    }
+
+    @PutMapping("/{id}")
+    public Speaker update(@PathVariable Long id, @RequestBody Speaker speaker) {
+        speaker.setId(id);
+        return speakerRepository.save(speaker);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        speakerRepository.deleteById(id);
     }
 }
