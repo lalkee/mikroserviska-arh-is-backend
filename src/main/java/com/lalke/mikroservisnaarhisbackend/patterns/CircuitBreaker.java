@@ -2,8 +2,8 @@ package com.lalke.mikroservisnaarhisbackend.patterns;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -18,7 +18,7 @@ public class CircuitBreaker {
     private volatile State state = State.CLOSED;
     private volatile Instant lastFailureTime = Instant.MIN;
 
-    public <T> T execute(Supplier<T> action) {
+    public <T> T execute(Callable<T> action) throws Exception {
         final State currentState = state;
 
         if (currentState == State.OPEN && 
@@ -34,7 +34,7 @@ public class CircuitBreaker {
         }
 
         try {
-            T result = action.get();
+            T result = action.call();
             if (currentState == State.HALF_OPEN)
                 transitionToClosed();
             failureCount.set(0);
