@@ -1,6 +1,7 @@
 package com.lalke.mikroservisnaarhisbackend.controller;
 
 import com.lalke.mikroservisnaarhisbackend.model.Event;
+import com.lalke.mikroservisnaarhisbackend.patterns.CircuitBreaker;
 import com.lalke.mikroservisnaarhisbackend.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -12,10 +13,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EventController {
     private final EventRepository eventRepository;
+    private final CircuitBreaker circuitBreaker;
 
     @GetMapping
     public List<Event> getAll() {
-        return eventRepository.findAll();
+        return circuitBreaker.execute(() -> {
+            return eventRepository.findAll();});
     }
 
     @GetMapping("/{id}")
