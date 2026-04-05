@@ -4,18 +4,18 @@ import java.time.Duration;
 import java.util.concurrent.Callable;
 
 public class Retry {
-    private final int maxAttempts;
+    private final int defaultMaxAttempts;
 
-    public Retry() {
-        maxAttempts = 3;
-    }
-
-    public Retry(int maxAttempts) {
-        this.maxAttempts = maxAttempts;
+    public Retry(int defaultMaxAttempts) {
+        this.defaultMaxAttempts = defaultMaxAttempts;
     }
 
     public <T> T execute(Callable<T> action) throws Exception {
-        Exception lastException = new RuntimeException("Undefined exception");   
+        return execute(action, this.defaultMaxAttempts);
+    }
+
+    public <T> T execute(Callable<T> action, int maxAttempts) throws Exception {
+        Exception lastException = new RuntimeException("Undefined exception");
 
         for (int i = 1; i <= maxAttempts; i++) {
             try {
