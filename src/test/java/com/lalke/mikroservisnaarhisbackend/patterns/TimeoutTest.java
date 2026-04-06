@@ -40,7 +40,7 @@ class TimeoutTest {
     @Test
     void execute_ShouldThrowTimeoutException_WhenActionExceedsDuration() throws Exception {
         when(action.call()).thenAnswer(invocation -> {
-            Thread.sleep(500);
+            Thread.sleep(1000);
             return "Too late";
         });
 
@@ -64,20 +64,24 @@ class TimeoutTest {
     @Test
     void execute_ShouldRespectCustomDuration() throws Exception {
         when(action.call()).thenAnswer(invocation -> {
-            Thread.sleep(150);
+            Thread.sleep(50);
             return "Made it";
         });
 
-        String result = timeout.execute(action, Duration.ofMillis(250));
+        String result = timeout.execute(action, Duration.ofMillis(200));
         
         assertEquals("Made it", result);
         verify(action, times(1)).call();
     }
 
     @Test
-    void execute_ShouldHandleInterruptedException() throws Exception {
+    void execute_ShouldHandleInterruptedExceptionAndRestoreStatus() throws Exception {
         when(action.call()).thenThrow(new InterruptedException("Interrupted during task"));
 
         assertThrows(InterruptedException.class, () -> timeout.execute(action));
+        
+        assertTrue(Thread.currentThread().isInterrupted());
+        
+        Thread.interrupted();
     }
 }

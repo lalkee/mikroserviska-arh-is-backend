@@ -49,7 +49,7 @@ public class Retry {
     }
 
     @FunctionalInterface
-    interface Sleeper {
+    public static interface Sleeper {
         void sleep(long millis) throws InterruptedException;
     }
 }
