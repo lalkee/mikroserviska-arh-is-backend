@@ -16,7 +16,7 @@ public class EventController {
     private final CircuitBreaker circuitBreaker;
 
     @GetMapping
-    public List<Event> getAll() {
+    public List<Event> getAll() throws Exception {
         return circuitBreaker.execute(() -> {
             return eventRepository.findAll();});
     }
