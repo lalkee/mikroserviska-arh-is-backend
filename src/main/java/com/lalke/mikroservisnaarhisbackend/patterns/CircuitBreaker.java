@@ -18,35 +18,39 @@ public class CircuitBreaker {
     private volatile State state = State.CLOSED;
     private volatile Instant lastFailureTime = Instant.MIN;
 
-    public <T> T execute(Callable<T> action) throws Exception {
-        final State currentState = state;
+public <T> T execute(Callable<T> action) throws Exception {
+    if (state == State.OPEN && 
+        Duration.between(lastFailureTime, Instant.now()).compareTo(cooldown) >= 0) {
+        transitionToHalfOpen();
+    }
 
-        if (currentState == State.OPEN && 
-            Duration.between(lastFailureTime, Instant.now()).compareTo(cooldown) >= 0)
-            transitionToHalfOpen();
-        
-        if (currentState == State.OPEN)
-            throw new CircuitBreakerOpenException("Circuit breaker is open");
+    final State currentState = state; 
 
-        if (currentState == State.HALF_OPEN && halfOpenTrials.incrementAndGet() > halfOpenTrialLimit) {
+    if (currentState == State.OPEN) {
+        throw new CircuitBreakerOpenException("Circuit breaker is open");
+    }
+
+    if (currentState == State.HALF_OPEN) {
+        if (halfOpenTrials.incrementAndGet() > halfOpenTrialLimit) {
             halfOpenTrials.decrementAndGet();
-            throw new CircuitBreakerOpenException("Circuit breaker is half open");
-        }
-
-        try {
-            T result = action.call();
-            if (currentState == State.HALF_OPEN)
-                transitionToClosed();
-            failureCount.set(0);
-            return result;
-        } catch (Exception e) {
-            if (currentState == State.CLOSED && failureCount.incrementAndGet() >= failureThreshold)
-                transitionToOpen();
-            else if (currentState == State.HALF_OPEN)
-                transitionToOpen();
-            throw e;
+            throw new CircuitBreakerOpenException("Circuit breaker is open");
         }
     }
+
+    try {
+        T result = action.call();
+        if (state == State.HALF_OPEN) {
+            transitionToClosed();
+        }
+        failureCount.set(0);
+        return result;
+    } catch (Exception e) {
+        if (state == State.HALF_OPEN || (state == State.CLOSED && failureCount.incrementAndGet() >= failureThreshold)) {
+            transitionToOpen();
+        }
+        throw e;
+    }
+}
 
     private synchronized void transitionToOpen() {
         state = State.OPEN;

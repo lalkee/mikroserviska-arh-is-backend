@@ -2,6 +2,8 @@ package com.lalke.mikroservisnaarhisbackend.controller;
 
 import com.lalke.mikroservisnaarhisbackend.model.Event;
 import com.lalke.mikroservisnaarhisbackend.patterns.CircuitBreaker;
+import com.lalke.mikroservisnaarhisbackend.patterns.Retry;
+import com.lalke.mikroservisnaarhisbackend.patterns.Timeout;
 import com.lalke.mikroservisnaarhisbackend.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,12 +16,17 @@ import java.util.List;
 public class EventController {
     private final EventRepository eventRepository;
     private final CircuitBreaker circuitBreaker;
+    private final Retry retry;
+    private final Timeout timeout;
 
-    @GetMapping
-    public List<Event> getAll() {
-        return circuitBreaker.execute(() -> {
-            return eventRepository.findAll();});
-    }
+@GetMapping
+public List<Event> getAll() throws Exception, InterruptedException {
+    return circuitBreaker.execute(() -> {
+        return retry.execute(() -> {
+            return timeout.execute(() -> {
+                return eventRepository.findAll();
+            });});});
+}
 
     @GetMapping("/{id}")
     public Event getById(@PathVariable Long id) {
