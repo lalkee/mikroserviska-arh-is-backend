@@ -1,9 +1,10 @@
 package com.lalke.mikroservisnaarhisbackend.messaging;
 
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import com.lalke.mikroservisnaarhisbackend.model.Location;
@@ -15,17 +16,30 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LocationMQHandler {
     private final LocationRepository repository;
+    private final RabbitTemplate rabbitTemplate;
 
     @RabbitListener(queues = "location.get.all")
-    @SendTo("location.get.all.res")
-    public List<Location> handleGetAll(java.util.Map<String, Object> payload) {
-        return repository.findAll();
+    public void handleGetAll(java.util.Map<String, Object> payload,
+                            @Header(AmqpHeaders.REPLY_TO) String replyTo,
+                            @Header(AmqpHeaders.CORRELATION_ID) String correlationId) {
+        
+        List<Location> locations = repository.findAll();
+        
+        if (replyTo != null) {
+            sendResponse(replyTo, correlationId, locations);
+        }
     }
 
     @RabbitListener(queues = "location.get.id")
-    @SendTo("location.get.id.res")
-    public Location handleGetById(Long id) {
-        return repository.findById(id.longValue()).orElse(null);
+    public void handleGetById(Long id,
+                                @Header(AmqpHeaders.REPLY_TO) String replyTo,
+                                @Header(AmqpHeaders.CORRELATION_ID) String correlationId) {
+        
+        Location location = repository.findById(id).orElse(null);
+        
+        if (replyTo != null) {
+            sendResponse(replyTo, correlationId, location);
+        }
     }
 
     @RabbitListener(queues = "location.save")
@@ -36,5 +50,14 @@ public class LocationMQHandler {
     @RabbitListener(queues = "location.delete")
     public void handleDelete(Long id) {
         repository.deleteById(id);
+    }
+
+    private void sendResponse(String replyTo, String correlationId, Object payload) {
+        rabbitTemplate.convertAndSend(replyTo, payload, message -> {
+            if (correlationId != null) {
+                message.getMessageProperties().setCorrelationId(correlationId);
+            }
+            return message;
+        });
     }
 }

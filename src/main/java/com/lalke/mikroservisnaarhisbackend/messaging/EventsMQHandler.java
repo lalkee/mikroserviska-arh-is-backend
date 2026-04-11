@@ -2,7 +2,9 @@ package com.lalke.mikroservisnaarhisbackend.messaging;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 import com.lalke.mikroservisnaarhisbackend.model.Event;
@@ -14,17 +16,30 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EventsMQHandler {
     private final EventRepository repository;
+    private final RabbitTemplate rabbitTemplate;
 
     @RabbitListener(queues = "event.get.all")
-    @SendTo("event.get.all.res")
-    public List<Event> handleGetAll(java.util.Map<String, Object> payload) {
-        return repository.findAllWithDetails();
+    public void handleGetAll(java.util.Map<String, Object> payload,
+                             @Header(AmqpHeaders.REPLY_TO) String replyTo,
+                             @Header(AmqpHeaders.CORRELATION_ID) String correlationId) {
+        
+        List<Event> events = repository.findAllWithDetails();
+        
+        if (replyTo != null) {
+            sendResponse(replyTo, correlationId, events);
+        }
     }
 
     @RabbitListener(queues = "event.get.id")
-    @SendTo("event.get.id.res")
-    public Event handleGetById(Long id) {
-        return repository.findByIdWithDetails(id).orElse(null);
+    public void handleGetById(Long id,
+                              @Header(AmqpHeaders.REPLY_TO) String replyTo,
+                              @Header(AmqpHeaders.CORRELATION_ID) String correlationId) {
+        
+        Event event = repository.findByIdWithDetails(id).orElse(null);
+        
+        if (replyTo != null) {
+            sendResponse(replyTo, correlationId, event);
+        }
     }
 
     @RabbitListener(queues = "event.save")
@@ -35,5 +50,14 @@ public class EventsMQHandler {
     @RabbitListener(queues = "event.delete")
     public void handleDelete(Long id) {
         repository.deleteById(id);
+    }
+
+    private void sendResponse(String replyTo, String correlationId, Object payload) {
+        rabbitTemplate.convertAndSend(replyTo, payload, message -> {
+            if (correlationId != null) {
+                message.getMessageProperties().setCorrelationId(correlationId);
+            }
+            return message;
+        });
     }
 }
