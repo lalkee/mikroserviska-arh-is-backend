@@ -20,6 +20,7 @@ public class RabbitConfig {
     @Bean public Queue eventGetByIdQueue() { return new Queue("event.get.id", true); }
     @Bean public Queue eventGetByIdResponseQueue() { return new Queue("event.get.id.res", true); }
     @Bean public Queue eventSaveQueue() { return new Queue("event.save", true); }
+    @Bean public Queue eventSaveResponseQueue() { return new Queue("event.save.res", true); }
     @Bean public Queue eventDeleteQueue() { return new Queue("event.delete", true); }
 
     @Bean public Queue speakerGetAllQueue() { return new Queue("speaker.get.all", true); }
@@ -28,6 +29,10 @@ public class RabbitConfig {
     @Bean public Queue speakerGetByIdResponseQueue() { return new Queue("speaker.get.id.res", true); }
     @Bean public Queue speakerSaveQueue() { return new Queue("speaker.save", true); }
     @Bean public Queue speakerDeleteQueue() { return new Queue("speaker.delete", true); }
+    @Bean public Queue speakerGetByEventIds() { return new Queue("speaker.get.byEventIds", true); }
+
+    @Bean public Queue participationSaveQueue() { return new Queue("participation.save", true); }
+    @Bean public Queue participationSaveResponseQueue() { return new Queue("participation.save.res", true); }
 
     @Bean
     public JacksonJsonMessageConverter jsonConverter() {

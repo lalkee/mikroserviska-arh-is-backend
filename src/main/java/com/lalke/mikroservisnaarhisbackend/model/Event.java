@@ -3,7 +3,6 @@ package com.lalke.mikroservisnaarhisbackend.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Data
@@ -23,6 +22,6 @@ public class Event {
     @ManyToOne
     private Location location;
     
-    @ManyToMany
-    private List<Speaker> speakers;
+    // speakerIds removed because the relationship is now 
+    // managed by the Speaker service's participations table.
 }
