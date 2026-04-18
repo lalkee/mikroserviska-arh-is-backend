@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
@@ -40,17 +41,15 @@ public class EventsMQHandler {
                 return;
             }
 
-            // 1. Collect IDs to request speakers in one batch
+            // collect ids to request speakers in one batch
             List<Long> ids = events.stream().map(Event::getId).collect(Collectors.toList());
 
-            // 2. RPC call to Clojure Speaker service
-            // Expecting a List of Lists of Speakers matching the order of 'ids'
-            List<List<Speaker>> allSpeakers = (List<List<Speaker>>) rabbitTemplate.convertSendAndReceive(
-                    "speaker.get.byEventIds", 
-                    ids
+            List<List<Speaker>> allSpeakers = rabbitTemplate.convertSendAndReceiveAsType(
+                    "speaker.get.byEventIds",
+                    ids,
+                    new ParameterizedTypeReference<List<List<Speaker>>>() {}
             );
 
-            // 3. Assemble DTOs
             List<EventResponseDTO> response = new ArrayList<>();
             for (int i = 0; i < events.size(); i++) {
                 List<Speaker> speakers = (allSpeakers != null && allSpeakers.size() > i) 
@@ -71,10 +70,10 @@ public class EventsMQHandler {
         Event event = repository.findById(id).orElse(null);
         
         if (event != null && replyTo != null) {
-            // Use the same batch endpoint for a single ID to keep Clojure service simple
-            List<List<Speaker>> result = (List<List<Speaker>>) rabbitTemplate.convertSendAndReceive(
-                    "speaker.get.byEventIds", 
-                    Collections.singletonList(id)
+            List<List<Speaker>> result = rabbitTemplate.convertSendAndReceiveAsType(
+                    "speaker.get.byEventIds",
+                    Collections.singletonList(id),
+                    new ParameterizedTypeReference<List<List<Speaker>>>() {}
             );
 
             List<Speaker> speakers = (result != null && !result.isEmpty()) 
@@ -85,7 +84,6 @@ public class EventsMQHandler {
         }
     }
 
-    // In EventsMQHandler.java
     @RabbitListener(queues = "event.save")
     public void handleSave(EventRequestDTO eventRequest,
                         @Header(AmqpHeaders.REPLY_TO) String replyTo,
@@ -93,9 +91,8 @@ public class EventsMQHandler {
         
         eventService.save(eventRequest);
 
-        // If there are speakers, we MUST wait for Clojure to finish before telling React to refresh
+        // we wait until we get response from speakers service, so frontend ui doesnt update too early to stale data
         if (eventRequest.getSpeakerIds() != null && !eventRequest.getSpeakerIds().isEmpty()) {
-            // This acts as a synchronous block waiting for the "Done" signal from Clojure
             rabbitTemplate.receiveAndConvert("participation.save.res", 5000); 
         }
 
@@ -108,7 +105,7 @@ public class EventsMQHandler {
 
     @RabbitListener(queues = "event.delete")
     public void handleDelete(Long id) {
-        repository.deleteById(id);
+        eventService.delete(id);
     }
 
     private void sendResponse(String replyTo, String correlationId, Object payload) {

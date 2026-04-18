@@ -41,19 +41,18 @@ public class OutboxWorker {
 
         log.info("OutboxWorker: Found {} records to process", records.size());
 
+        /*payload is already serialized into a json-string. to avoid serializig it again (witch
+        would put it in double quotes and mess up speakears service decoding), we manually
+        build a message and send it using .send (instead of .convertAndSend which uses message converter
+        to serialize POJO into json-string)*/
         for (OutboxRecord record : records) {
             try {
-                // 1. Convert the pre-serialized JSON string from DB into raw bytes
                 byte[] body = record.getPayload().getBytes(StandardCharsets.UTF_8);
 
-                // 2. Wrap bytes in a Message object and set the content type header
-                // This tells RabbitMQ (and consumers) that this is valid JSON
                 Message message = MessageBuilder.withBody(body)
                         .setContentType(MessageProperties.CONTENT_TYPE_JSON)
                         .build();
 
-                // 3. Use .send() instead of .convertAndSend()
-                // .send() transmits the message body as-is without further serialization
                 rabbitTemplate.send(record.getQueue(), message);
                 
                 log.info("OutboxWorker: Successfully sent record ID: {} to queue: {}", 
@@ -64,7 +63,6 @@ public class OutboxWorker {
             } catch (Exception e) {
                 log.error("OutboxWorker: Failed to process record ID: {}. Error: {}", 
                           record.getId(), e.getMessage());
-                // Rethrowing ensures the transaction rolls back for this batch
                 throw e; 
             }
         }

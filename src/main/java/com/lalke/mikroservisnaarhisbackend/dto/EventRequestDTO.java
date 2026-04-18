@@ -12,6 +12,6 @@ public class EventRequestDTO {
     private LocalDateTime dateTime;
     private String duration;
     private double registrationFee;
-    private Long locationId; // ID for the ManyToOne relationship
-    private List<Long> speakerIds; // IDs to be sent to the Speaker service
+    private Long locationId;
+    private List<Long> speakerIds;
 }

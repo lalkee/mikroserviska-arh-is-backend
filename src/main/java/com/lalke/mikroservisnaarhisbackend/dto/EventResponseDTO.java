@@ -19,10 +19,6 @@ public class EventResponseDTO {
     private Location location;
     private List<Speaker> speakers;
 
-    /**
-     * Maps the Event entity and the list of Speakers fetched from the 
-     * external service into a single response object.
-     */
     public static EventResponseDTO from(Event event, List<Speaker> speakers) {
         EventResponseDTO dto = new EventResponseDTO();
         dto.setId(event.getId());

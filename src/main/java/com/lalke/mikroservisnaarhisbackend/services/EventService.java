@@ -18,15 +18,16 @@ import com.lalke.mikroservisnaarhisbackend.repository.LocationRepository;
 import com.lalke.mikroservisnaarhisbackend.repository.OutboxRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Added for logging
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j // Enables 'log' variable
+@Slf4j
 public class EventService {
     
     private final Queue participationSaveQueue;
+    private final Queue participationDeleteQueue;
     private final EventRepository eventRepository;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
@@ -54,9 +55,8 @@ public class EventService {
         Event savedEvent = eventRepository.save(event);
         log.info("Event saved with ID: {}", savedEvent.getId());
 
-        // Check if we even enter the outbox logic
+        log.debug("Processing {} speaker IDs for outbox.", request.getSpeakerIds().size());
         if (request.getSpeakerIds() != null && !request.getSpeakerIds().isEmpty()) {
-            log.debug("Processing {} speaker IDs for outbox.", request.getSpeakerIds().size());
 
             List<Map<String, Long>> participations = request.getSpeakerIds().stream()
                 .map(speakerId -> {
@@ -85,5 +85,16 @@ public class EventService {
         } else {
             log.warn("No speaker IDs provided. Skipping Outbox persistence.");
         }
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        eventRepository.deleteById(id);
+
+        OutboxRecord outboxRecord = new OutboxRecord();
+        outboxRecord.setTimestamp(Instant.now());
+        outboxRecord.setQueue(participationDeleteQueue.getName());
+        outboxRecord.setPayload(id.toString());
+        outboxRepository.save(outboxRecord);
     }
 }

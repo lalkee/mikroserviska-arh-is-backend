@@ -21,7 +21,4 @@ public class Event {
     
     @ManyToOne
     private Location location;
-    
-    // speakerIds removed because the relationship is now 
-    // managed by the Speaker service's participations table.
 }

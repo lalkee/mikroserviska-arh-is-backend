@@ -33,6 +33,7 @@ public class RabbitConfig {
 
     @Bean public Queue participationSaveQueue() { return new Queue("participation.save", true); }
     @Bean public Queue participationSaveResponseQueue() { return new Queue("participation.save.res", true); }
+    @Bean public Queue participationDeleteQueue() { return new Queue("participation.delete", true); }
 
     @Bean
     public JacksonJsonMessageConverter jsonConverter() {
