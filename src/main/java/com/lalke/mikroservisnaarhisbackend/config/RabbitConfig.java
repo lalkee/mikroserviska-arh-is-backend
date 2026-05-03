@@ -35,6 +35,10 @@ public class RabbitConfig {
     @Bean public Queue participationSaveResponseQueue() { return new Queue("participation.save.res", true); }
     @Bean public Queue participationDeleteQueue() { return new Queue("participation.delete", true); }
 
+    @Bean public Queue emailSendQueue() { return new Queue("email.send", true); }
+
+    @Bean public Queue generalDlq() { return new Queue("general.dlq", true); }
+
     @Bean
     public JacksonJsonMessageConverter jsonConverter() {
         return new JacksonJsonMessageConverter();

@@ -29,7 +29,7 @@ public class EventsMQHandler {
     private final RabbitTemplate rabbitTemplate;
 
     @RabbitListener(queues = "event.get.all")
-    public void handleGetAll(java.util.Map<String, Object> payload,
+    public void handleGetAll(Map<String, Object> payload,
                              @Header(AmqpHeaders.REPLY_TO) String replyTo,
                              @Header(AmqpHeaders.CORRELATION_ID) String correlationId) {
         
