@@ -37,6 +37,8 @@ public class RabbitConfig {
 
     @Bean public Queue emailSendQueue() { return new Queue("email.send", true); }
 
+    @Bean public Queue generalDlq() { return new Queue("general.dlq", true); }
+
     @Bean
     public JacksonJsonMessageConverter jsonConverter() {
         return new JacksonJsonMessageConverter();
