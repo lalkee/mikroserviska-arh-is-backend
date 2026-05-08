@@ -22,6 +22,7 @@ public class RabbitConfig {
     @Bean public Queue eventSaveQueue() { return new Queue("event.save", true); }
     @Bean public Queue eventSaveResponseQueue() { return new Queue("event.save.res", true); }
     @Bean public Queue eventDeleteQueue() { return new Queue("event.delete", true); }
+    @Bean public Queue eventCleanupQueue() { return new Queue("events.delete.speaker", true); }
 
     @Bean public Queue speakerGetAllQueue() { return new Queue("speaker.get.all", true); }
     @Bean public Queue speakerGetAllResponseQueue() { return new Queue("speaker.get.all.res", true); }
