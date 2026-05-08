@@ -108,6 +108,38 @@ public class EventsMQHandler {
         eventService.delete(id);
     }
 
+    @RabbitListener(queues = "events.delete.speaker")
+    public void handleDeleteSpeakerFromEvents(Map<String, Object> payload) {
+        List<Integer> eventIds = (List<Integer>) payload.get("eventIds");
+        Map<String, Object> speakerMap = (Map<String, Object>) payload.get("speaker");
+
+        try {
+            for (Integer eventId : eventIds) {
+                Long eId = Long.valueOf(eventId);
+                
+                // Re-check: only delete if this speaker was the sole participant
+                List<List<Speaker>> result = rabbitTemplate.convertSendAndReceiveAsType(
+                        "speaker.get.byEventIds",
+                        Collections.singletonList(eId),
+                        new ParameterizedTypeReference<List<List<Speaker>>>() {}
+                );
+
+                if (result != null && !result.isEmpty() && result.get(0).isEmpty()) {
+                    eventService.delete(eId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to clean up events. Requesting speaker restoration.");
+            
+            // Send request to re-add the speaker and their participations
+            Map<String, Object> restorePayload = new HashMap<>();
+            restorePayload.put("speaker", speakerMap);
+            restorePayload.put("eventIds", eventIds);
+            
+            rabbitTemplate.convertAndSend("speaker.restore", restorePayload);
+        }
+    }
+
     private void sendResponse(String replyTo, String correlationId, Object payload) {
         rabbitTemplate.convertAndSend(replyTo, payload, message -> {
             if (correlationId != null) {
