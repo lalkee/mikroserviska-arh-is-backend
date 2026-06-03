@@ -1,7 +1,13 @@
 package com.lalke.mikroservisnaarhisbackend.patterns;
 
-import java.util.concurrent.*;
 import java.time.Duration;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class Timeout {
     private final Duration defaultDuration;
@@ -27,14 +33,14 @@ public class Timeout {
         are wrapped in ExecutionException*/
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof InterruptedException) {
+            if (cause instanceof InterruptedException interruptedException) {
                 /*calling thread doesn't care worker was interupted,
                 so we need to do it manually*/
                 Thread.currentThread().interrupt();
-                throw (InterruptedException) cause;
+                throw interruptedException;
             }
-            if (cause instanceof Exception) {
-                throw (Exception) cause;
+            if (cause instanceof Exception exception) {
+                throw exception;
             }
             throw e;
         } catch (InterruptedException e) {

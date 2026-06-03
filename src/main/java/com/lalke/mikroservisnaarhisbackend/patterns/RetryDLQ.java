@@ -16,22 +16,23 @@ public class RetryDLQ {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public <T, R> R executeWithDlq(T payload, Callable<R> action) throws Exception {
-        return executeWithDlq(payload, DEFAULT_DLQ, action);
+    public <T, R> R executeWithDlq(T payload, String originalRoutingKey, Callable<R> action) throws Exception {
+        return executeWithDlq(payload, originalRoutingKey, DEFAULT_DLQ, action);
     }
 
-    public <T, R> R executeWithDlq(T payload, String dlqRoutingKey, Callable<R> action) throws Exception {
+    public <T, R> R executeWithDlq(T payload, String originalRoutingKey, String dlqRoutingKey, Callable<R> action) throws Exception {
         try {
             return retry.execute(action);
         } catch (Exception e) {
-            sendToDeadLetterQueue(payload, dlqRoutingKey, e);
+            sendToDeadLetterQueue(payload, originalRoutingKey, dlqRoutingKey, e);
             throw e;
         }
     }
 
-    private <T> void sendToDeadLetterQueue(T payload, String routingKey, Exception cause) {
+    private <T> void sendToDeadLetterQueue(T payload, String originalRoutingKey, String routingKey, Exception cause) {
         rabbitTemplate.convertAndSend(routingKey, payload, message -> {
             message.getMessageProperties().getHeaders().put("x-exception-message", cause.getMessage());
+            message.getMessageProperties().getHeaders().put("x-original-routing-key", originalRoutingKey);
             return message;
         });
     }

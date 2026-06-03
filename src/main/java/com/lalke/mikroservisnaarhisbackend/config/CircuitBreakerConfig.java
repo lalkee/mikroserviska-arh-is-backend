@@ -11,6 +11,6 @@ import com.lalke.mikroservisnaarhisbackend.patterns.CircuitBreaker;
 public class CircuitBreakerConfig {
     @Bean
     public CircuitBreaker circuitBreaker() {
-        return new CircuitBreaker(3, 2, Duration.ofSeconds(30));
+        return new CircuitBreaker(3, 2, Duration.ofSeconds(10));
     }
 }

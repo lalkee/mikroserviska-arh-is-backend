@@ -10,4 +10,6 @@ import lombok.NoArgsConstructor;
 public class Email {
     private String recipient;
     private String text;
+
+    //{"recipient": "test@test.com", "text": "aaaaaaa"}
 }

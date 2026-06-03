@@ -44,6 +44,7 @@ public class Retry {
                     }
                 }
             }
+            System.out.println("Retrying...");
         }
         throw lastException;
     }
